@@ -1,9 +1,6 @@
 package com.vasileva.finalprojectquest.service;
 
-import com.vasileva.finalprojectquest.entity.Game;
-import com.vasileva.finalprojectquest.entity.GameState;
-import com.vasileva.finalprojectquest.entity.Quest;
-import com.vasileva.finalprojectquest.entity.User;
+import com.vasileva.finalprojectquest.entity.*;
 import com.vasileva.finalprojectquest.repository.GameRepository;
 import com.vasileva.finalprojectquest.repository.GameStateRepository;
 import com.vasileva.finalprojectquest.repository.QuestRepository;
@@ -11,8 +8,6 @@ import com.vasileva.finalprojectquest.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,15 +19,14 @@ public class GameService {
     private final GameEngine gameEngine;
 
     @Transactional
-    public Game startNewGame(Long questId, Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+    public Question startNewGameByUsername(Long questId, String username) {
+        User user = userRepository.findByLogin(username)
+                .orElseThrow(() -> new RuntimeException("Текущий пользователь не найден в БД"));
+
         Quest quest = questRepository.findById(questId)
                 .orElseThrow(() -> new RuntimeException("Квест не найден"));
 
-        Optional<Game> oldGameOpt = gameRepository.findByUserId(userId);
-        if (oldGameOpt.isPresent()) {
-            Game oldGame = oldGameOpt.get();
+        gameRepository.findByUserId(user.getId()).ifPresent(oldGame -> {
             GameState oldState = oldGame.getGameState();
             gameRepository.delete(oldGame);
             if (oldState != null) {
@@ -40,7 +34,7 @@ public class GameService {
             }
             gameRepository.flush();
             gameStateRepository.flush();
-        }
+        });
 
         GameState initialState = gameEngine.startGame(user, quest);
 
@@ -51,23 +45,28 @@ public class GameService {
                 .gameState(initialState)
                 .build();
 
-        return gameRepository.save(game);
+        gameRepository.save(game);
+
+        return initialState.getCurrentQuestion();
     }
 
     @Transactional
-    public Game advanceGame(Long gameId, Long answerId) {
-        Game game = gameRepository.findById(gameId)
-                .orElseThrow(() -> new RuntimeException("Игра не найдена"));
+    public Question advanceGameByUsername(String username, Long answerId) {
+        User user = userRepository.findByLogin(username)
+                .orElseThrow(() -> new RuntimeException("Текущий пользователь не найден в БД"));
 
-        GameState nextState = gameEngine.advanceGame(game.getGameState(), answerId);
+        Game activeGame = gameRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException("У вас нет активной игры"));
 
-        game.setCurrentQuestionId(nextState.getCurrentQuestion().getId());
-        game.setGameState(nextState);
+        GameState currentGameState = activeGame.getGameState();
+        GameState nextStateCalculated = gameEngine.advanceGame(currentGameState, answerId);
 
-        return gameRepository.save(game);
-    }
+        currentGameState.setCurrentQuestion(nextStateCalculated.getCurrentQuestion());
+        currentGameState.setCompleted(nextStateCalculated.isCompleted());
 
-    public Optional<Game> getActiveGameByUserId(Long userId) {
-        return gameRepository.findByUserId(userId);
+        activeGame.setCurrentQuestionId(nextStateCalculated.getCurrentQuestion().getId());
+        gameRepository.save(activeGame);
+
+        return nextStateCalculated.getCurrentQuestion();
     }
 }
