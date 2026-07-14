@@ -8,5 +8,6 @@
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <include file="db/changelog/migrations/01-init-schema.xml"/>
+    <include file="db/changelog/migrations/02-insert-space-quest.xml"/>
 
 </databaseChangeLog>

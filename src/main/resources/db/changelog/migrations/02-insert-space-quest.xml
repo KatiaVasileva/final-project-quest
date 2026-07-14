@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="insert-space-quest" author="vasileva">
+
+        <!-- 1. ВСТАВКА КВЕСТА -->
+        <insert tableName="quests">
+            <column name="title" value="Космическое приключение"/>
+            <column name="description" value="Ты — космический путешественник, чей корабль внезапно получает загадочный сигнал от неопознанного объекта..."/>
+            <column name="text" value="Ты — космический путешественник, чей корабль внезапно получает загадочный сигнал от неопознанного объекта на границе изученной галактики. Впереди — неизвестность, за каждым поворотом таятся тайны космоса, а каждое решение может стать судьбоносным. Готов ли ты принять вызов Вселенной и отправиться в путешествие, где правда и ложь, смелость и осторожность, судьба и случай переплетутся в одну невероятную историю?"/>
+            <column name="image" value="quest-1.png"/>
+        </insert>
+
+        <!-- 2. ВСТАВКА ВОПРОСОВ -->
+        <!-- Для связи с квестом используем подзапрос, который найдет ID только что созданного космического приключения -->
+        <insert tableName="questions">
+            <column name="label" value="1"/>
+            <column name="text" value="Принять вызов НЛО?"/>
+            <column name="quest_id" valueComputed="(SELECT id FROM quests WHERE title = 'Космическое приключение')"/>
+        </insert>
+
+        <insert tableName="questions">
+            <column name="label" value="2"/>
+            <column name="text" value="Поднимешься на мостик к капитану?"/>
+            <column name="quest_id" valueComputed="(SELECT id FROM quests WHERE title = 'Космическое приключение')"/>
+        </insert>
+
+        <insert tableName="questions">
+            <column name="label" value="3"/>
+            <column name="text" value="Ты поднялся на мостик. Ты кто?"/>
+            <column name="quest_id" valueComputed="(SELECT id FROM quests WHERE title = 'Космическое приключение')"/>
+        </insert>
+
+        <insert tableName="questions">
+            <column name="label" value="+810"/>
+            <column name="text" value="Победа! Тебя вернули домой."/>
+            <column name="quest_id" valueComputed="(SELECT id FROM quests WHERE title = 'Космическое приключение')"/>
+        </insert>
+
+        <insert tableName="questions">
+            <column name="label" value="-910"/>
+            <column name="text" value="Поражение... Ты отклонил вызов"/>
+            <column name="quest_id" valueComputed="(SELECT id FROM quests WHERE title = 'Космическое приключение')"/>
+        </insert>
+
+        <insert tableName="questions">
+            <column name="label" value="-911"/>
+            <column name="text" value="Поражение... Твою ложь разоблачили"/>
+            <column name="quest_id" valueComputed="(SELECT id FROM quests WHERE title = 'Космическое приключение')"/>
+        </insert>
+
+        <!-- 3. ВСТАВКА ВАРИАНТОВ ОТВЕТОВ -->
+        <!-- Связываем ответы с вопросами через их текстовые лейблы (label) -->
+
+        <!-- Ответы для Вопроса 1 -->
+        <insert tableName="answers">
+            <column name="question_id" valueComputed="(SELECT id FROM questions WHERE label = '1' AND quest_id = (SELECT id FROM quests WHERE title = 'Космическое приключение'))"/>
+            <column name="next_question_label" value="2"/>
+            <column name="text" value="Принять вызов"/>
+        </insert>
+        <insert tableName="answers">
+            <column name="question_id" valueComputed="(SELECT id FROM questions WHERE label = '1' AND quest_id = (SELECT id FROM quests WHERE title = 'Космическое приключение'))"/>
+            <column name="next_question_label" value="-910"/>
+            <column name="text" value="Отклонить вызов"/>
+        </insert>
+
+        <!-- Ответы для Вопроса 2 -->
+        <insert tableName="answers">
+            <column name="question_id" valueComputed="(SELECT id FROM questions WHERE label = '2' AND quest_id = (SELECT id FROM quests WHERE title = 'Космическое приключение'))"/>
+            <column name="next_question_label" value="3"/>
+            <column name="text" value="Подняться на мостик"/>
+        </insert>
+        <insert tableName="answers">
+            <column name="question_id" valueComputed="(SELECT id FROM questions WHERE label = '2' AND quest_id = (SELECT id FROM quests WHERE title = 'Космическое приключение'))"/>
+            <column name="next_question_label" value="-910"/>
+            <column name="text" value="Отказаться подниматься на мостик"/>
+        </insert>
+
+        <!-- Ответы для Вопроса 3 -->
+        <insert tableName="answers">
+            <column name="question_id" valueComputed="(SELECT id FROM questions WHERE label = '3' AND quest_id = (SELECT id FROM quests WHERE title = 'Космическое приключение'))"/>
+            <column name="next_question_label" value="+810"/>
+            <column name="text" value="Рассказать правду о себе"/>
+        </insert>
+        <insert tableName="answers">
+            <column name="question_id" valueComputed="(SELECT id FROM questions WHERE label = '3' AND quest_id = (SELECT id FROM quests WHERE title = 'Космическое приключение'))"/>
+            <column name="next_question_label" value="-911"/>
+            <column name="text" value="Солгать о себе"/>
+        </insert>
+
+        <!-- 4. УСТАНОВКА СТАРТОВОГО ВОПРОСА ДЛЯ КВЕСТА -->
+        <!-- Теперь, когда первый вопрос физически создан и получил ID, мы обновляем сам квест, прописывая ему start_question_id -->
+        <update tableName="quests">
+            <column name="start_question_id" valueComputed="(SELECT id FROM questions WHERE label = '1' AND quest_id = (SELECT id FROM quests WHERE title = 'Космическое приключение'))"/>
+            <column name="image" value="quest-1.png"/>
+            <where>title = 'Космическое приключение'</where>
+        </update>
+
+    </changeSet>
+</databaseChangeLog>
+
