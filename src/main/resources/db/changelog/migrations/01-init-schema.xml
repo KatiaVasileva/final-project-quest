@@ -56,6 +56,9 @@
             <column name="text" type="TEXT"/>
             <column name="start_question_id" type="BIGINT"/>
             <column name="image" type="VARCHAR(255)"/>
+            <column name="creator_id" type="BIGINT">
+                <constraints foreignKeyName="fk_quests_user"/>
+            </column>
         </createTable>
     </changeSet>
 
