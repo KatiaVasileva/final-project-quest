@@ -7,6 +7,8 @@ import com.vasileva.finalprojectquest.entity.UserStats;
 import com.vasileva.finalprojectquest.mapper.UserAdminMapper;
 import com.vasileva.finalprojectquest.repository.UserRepository;
 import com.vasileva.finalprojectquest.repository.UserStatsRepository;
+import com.vasileva.finalprojectquest.util.MessageHelper;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,7 @@ public class UserService {
     private final UserStatsRepository userStatsRepository;
     private final UserAdminMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final MessageHelper messageHelper;
 
     @Transactional(readOnly = true)
     public List<UserAdminDto> getAllUsers() {
@@ -32,10 +35,10 @@ public class UserService {
     @Transactional
     public UserAdminDto createUser(UserSaveDto dto) {
         if (userRepository.existsByLogin(dto.getLogin())) {
-            throw new RuntimeException("Логин уже занят");
+            throw new RuntimeException("error.login.exists");
         }
         if (userRepository.existsByEmail(dto.getEmail())) {
-            throw new RuntimeException("Email уже используется");
+            throw new RuntimeException("error.email.exists");
         }
 
         User user = userMapper.toEntity(dto);
@@ -56,7 +59,8 @@ public class UserService {
     @Transactional
     public UserAdminDto updateUser(Long id, UserSaveDto dto) {
         User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageHelper.getMessage("error.user.not_found", id)));
 
         existingUser.setLogin(dto.getLogin());
         existingUser.setEmail(dto.getEmail());
@@ -72,7 +76,8 @@ public class UserService {
     @Transactional
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("Пользователь не существует");
+            throw new EntityNotFoundException(
+                    messageHelper.getMessage("error.user.not_found", id));
         }
         userStatsRepository.findByUserId(id).ifPresent(userStatsRepository::delete);
         userRepository.deleteById(id);

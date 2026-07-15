@@ -50,17 +50,17 @@ public class AuthService {
     @Transactional
     public String register(RegisterRequest request) {
         if (userRepository.existsByLogin(request.getLogin())) {
-            throw new RuntimeException("Этот логин уже занят!");
+            throw new RuntimeException("error.login.exists");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Этот email уже используется!");
+            throw new RuntimeException("error.email.exists");
         }
 
         User user = User.builder()
                 .login(request.getLogin())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.USER) // По умолчанию даем роль USER
+                .role(Role.USER)
                 .build();
 
         userRepository.save(user);
@@ -74,14 +74,14 @@ public class AuthService {
 
         userStatsRepository.save(stats);
 
-        return "Пользователь успешно зарегистрирован";
+        return "User registered successfully";
     }
 
     public JwtResponse refreshTokens(RefreshRequest request) {
         String oldRefreshToken = request.getRefreshToken();
 
         if (jwtTokenUtil.isTokenExpired(oldRefreshToken)) {
-            throw new RuntimeException("Refresh токен просрочен. Пожалуйста, авторизуйтесь заново.");
+            throw new RuntimeException("error.token.expired");
         }
 
         Claims claims = jwtTokenUtil.validateRefreshToken(oldRefreshToken);

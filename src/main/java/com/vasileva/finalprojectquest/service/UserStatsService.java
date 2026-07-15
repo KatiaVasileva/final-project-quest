@@ -6,6 +6,8 @@ import com.vasileva.finalprojectquest.entity.User;
 import com.vasileva.finalprojectquest.entity.UserStats;
 import com.vasileva.finalprojectquest.repository.UserRepository;
 import com.vasileva.finalprojectquest.repository.UserStatsRepository;
+import com.vasileva.finalprojectquest.util.MessageHelper;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 public class UserStatsService {
     private final UserStatsRepository userStatsRepository;
     private final UserRepository userRepository;
+    private final MessageHelper messageHelper;
 
     @Transactional
     public void updateUserStats(Question finalQuestion, UserStats stats) {
@@ -35,7 +38,8 @@ public class UserStatsService {
     @Transactional(readOnly = true)
     public UserStatsDto getStatsByUsername(String username) {
         User user = userRepository.findByLogin(username)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageHelper.getMessage("error.username.not_found", username)));
 
         UserStats stats = userStatsRepository.findByUserId(user.getId())
                 .orElseGet(() -> userStatsRepository.save(UserStats.builder()

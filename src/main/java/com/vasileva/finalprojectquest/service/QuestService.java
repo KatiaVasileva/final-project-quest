@@ -6,6 +6,8 @@ import com.vasileva.finalprojectquest.entity.User;
 import com.vasileva.finalprojectquest.mapper.FullQuestMapper;
 import com.vasileva.finalprojectquest.repository.QuestRepository;
 import com.vasileva.finalprojectquest.repository.UserRepository;
+import com.vasileva.finalprojectquest.util.MessageHelper;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ public class QuestService {
     private final QuestRepository questRepository;
     private final UserRepository userRepository;
     private final FullQuestMapper fullQuestMapper;
+    private final MessageHelper messageHelper;
 
     @Transactional(readOnly = true)
     public List<FullQuestDto> getAllQuestsWithDetails() {
@@ -28,14 +31,16 @@ public class QuestService {
     @Transactional(readOnly = true)
     public FullQuestDto getQuestByIdWithDetails(Long id) {
         Quest quest = questRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Квест с ID " + id + " не найден"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageHelper.getMessage("error.quest.not_found", id)));
         return fullQuestMapper.toDto(quest);
     }
 
     @Transactional
     public FullQuestDto createQuest(FullQuestDto dto, String username) {
         User creator = userRepository.findByLogin(username)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageHelper.getMessage("error.username.not_found", username)));
 
         Quest quest = fullQuestMapper.toEntity(dto);
         quest.setCreator(creator);
@@ -56,7 +61,8 @@ public class QuestService {
     @Transactional
     public FullQuestDto updateQuest(Long id, FullQuestDto dto) {
         Quest existingQuest = questRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Квест не найден"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageHelper.getMessage("error.quest.not_found", id)));
 
         existingQuest.setTitle(dto.getTitle());
         existingQuest.setDescription(dto.getDescription());
@@ -84,7 +90,8 @@ public class QuestService {
     @Transactional
     public void deleteQuest(Long id) {
         if (!questRepository.existsById(id)) {
-            throw new RuntimeException("Квест не существует");
+            throw new EntityNotFoundException(
+                    messageHelper.getMessage("error.quest.not_found", id));
         }
         questRepository.deleteById(id);
     }
@@ -92,7 +99,8 @@ public class QuestService {
     @Transactional(readOnly = true)
     public List<FullQuestDto> getQuestsByCreator(String username) {
         User creator = userRepository.findByLogin(username)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageHelper.getMessage("error.username.not_found", username)));
         List<Quest> quests = questRepository.findByCreatorId(creator.getId());
         return fullQuestMapper.toDtoList(quests);
     }

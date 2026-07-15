@@ -5,6 +5,8 @@ import com.vasileva.finalprojectquest.repository.GameRepository;
 import com.vasileva.finalprojectquest.repository.GameStateRepository;
 import com.vasileva.finalprojectquest.repository.QuestRepository;
 import com.vasileva.finalprojectquest.repository.UserRepository;
+import com.vasileva.finalprojectquest.util.MessageHelper;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,14 +19,16 @@ public class GameService {
     private final QuestRepository questRepository;
     private final GameStateRepository gameStateRepository;
     private final GameEngine gameEngine;
-
+    private final MessageHelper messageHelper;
     @Transactional
     public Question startNewGameByUsername(Long questId, String username) {
         User user = userRepository.findByLogin(username)
-                .orElseThrow(() -> new RuntimeException("Текущий пользователь не найден в БД"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageHelper.getMessage("error.username.not_found", username)));
 
         Quest quest = questRepository.findById(questId)
-                .orElseThrow(() -> new RuntimeException("Квест не найден"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageHelper.getMessage("error.quest.not_found", questId)));
 
         gameRepository.findByUserId(user.getId()).ifPresent(oldGame -> {
             GameState oldState = oldGame.getGameState();
@@ -53,10 +57,11 @@ public class GameService {
     @Transactional
     public Question advanceGameByUsername(String username, Long answerId) {
         User user = userRepository.findByLogin(username)
-                .orElseThrow(() -> new RuntimeException("Текущий пользователь не найден в БД"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageHelper.getMessage("error.username.not_found", username)));
 
         Game activeGame = gameRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new RuntimeException("У вас нет активной игры"));
+                .orElseThrow(() -> new RuntimeException("error.game.not_found"));
 
         GameState currentGameState = activeGame.getGameState();
         GameState nextStateCalculated = gameEngine.advanceGame(currentGameState, answerId);
