@@ -21,14 +21,14 @@ public class UserStatsController {
 
     @GetMapping
     public ResponseEntity<UserStatsDto> getMyStats(Authentication authentication) {
-        log.info("REST-запрос на получение личной статистики для пользователя: {}", authentication.getName());
+        log.info("REST request to get user's [{}] stats", authentication.getName());
         UserStatsDto statsDto = userStatsService.getStatsByUsername(authentication.getName());
         return ResponseEntity.ok(statsDto);
     }
 
     @GetMapping("/leaderboard")
     public ResponseEntity<List<UserStatsDto>> getLeaderboard() {
-        log.info("REST-запрос на получение глобальной таблицы лидеров");
+        log.info("REST request to get leaderboard");
         List<UserStatsDto> leaderboard = userStatsService.getLeaderboard();
         return ResponseEntity.ok(leaderboard);
     }

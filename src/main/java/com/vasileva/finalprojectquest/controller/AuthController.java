@@ -22,19 +22,30 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
+        log.info("REST request to register a new user: login [{}], email [{}]",
+                request.getLogin(), request.getEmail());
         String message = authService.register(request);
+
+        log.info("User [{}] successfully registered", request.getLogin());
         return ResponseEntity.ok(message);
     }
 
     @PostMapping("/login")
     public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest request) {
+        log.info("REST request to authenticate a user with login [{}]", request.getLogin());
         JwtResponse response = authService.login(request);
+
+        log.info("User [{}] successfully logged in, a pair of JWT tokens has been generated",
+                request.getLogin());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<JwtResponse> refresh(@RequestBody RefreshRequest request) {
+        log.info("REST request to refresh a pair of JWT tokens");
         JwtResponse response = authService.refreshTokens(request);
+
+        log.info("JWT tokens successfully refreshed");
         return ResponseEntity.ok(response);
     }
 
