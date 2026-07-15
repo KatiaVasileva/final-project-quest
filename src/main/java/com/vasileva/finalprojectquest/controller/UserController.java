@@ -3,6 +3,7 @@ package com.vasileva.finalprojectquest.controller;
 import com.vasileva.finalprojectquest.dto.UserAdminDto;
 import com.vasileva.finalprojectquest.dto.UserSaveDto;
 import com.vasileva.finalprojectquest.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,12 +23,12 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserAdminDto> create(@RequestBody UserSaveDto dto) {
+    public ResponseEntity<UserAdminDto> create(@Valid @RequestBody UserSaveDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(dto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserAdminDto> update(@PathVariable Long id, @RequestBody UserSaveDto dto) {
+    public ResponseEntity<UserAdminDto> update(@PathVariable Long id, @Valid @RequestBody UserSaveDto dto) {
         return ResponseEntity.ok(userService.updateUser(id, dto));
     }
 

@@ -2,6 +2,7 @@ package com.vasileva.finalprojectquest.controller;
 
 import com.vasileva.finalprojectquest.dto.FullQuestDto;
 import com.vasileva.finalprojectquest.service.QuestService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,13 +28,13 @@ public class QuestController {
     }
 
     @PostMapping
-    public ResponseEntity<FullQuestDto> createQuest(@RequestBody FullQuestDto dto, Authentication authentication) {
+    public ResponseEntity<FullQuestDto> createQuest(@Valid @RequestBody FullQuestDto dto, Authentication authentication) {
         FullQuestDto createdQuest = questService.createQuest(dto, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(createdQuest);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<FullQuestDto> updateQuest(@PathVariable Long id, @RequestBody FullQuestDto dto) {
+    public ResponseEntity<FullQuestDto> updateQuest(@PathVariable Long id, @Valid @RequestBody FullQuestDto dto) {
         return ResponseEntity.ok(questService.updateQuest(id, dto));
     }
 
