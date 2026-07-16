@@ -56,7 +56,6 @@
                 password: document.getElementById('password').value
             };
 
-            // Валидация на стороне клиента (фронтенда)
             if (!payload.login.trim() || !payload.password.trim()) {
                 showMessage("Пожалуйста, заполните поля Логин и Пароль!");
                 return;
@@ -72,7 +71,7 @@
                 const data = await res.json();
                 localStorage.setItem('accessToken', data.accessToken);
                 localStorage.setItem('refreshToken', data.refreshToken);
-                window.location.href = 'index.html'; // Успех: уходим на главную
+                window.location.href = 'index.html';
             } else {
                 const errData = await res.json();
                 showMessage(errData.message || "Неверный логин или пароль");
@@ -102,7 +101,6 @@
             });
             const contentType = res.headers.get("content-type");
             if (res.ok) {
-                const textSuccess = await res.text();
                 showMessage("Регистрация успешна! Теперь нажмите 'Войти'.", true);
             } else {
                 if (contentType && contentType.includes("application/json")) {

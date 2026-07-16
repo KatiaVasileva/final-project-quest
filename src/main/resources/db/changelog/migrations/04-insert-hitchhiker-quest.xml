@@ -7,7 +7,6 @@
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="20260716-insert-hitchhiker-quest" author="katiavasileva">
-        <!-- 1. Загрузка квеста из CSV -->
         <loadData
                 tableName="quests"
                 file="db/data/quests.csv"
@@ -23,19 +22,16 @@
 
         </loadData>
 
-        <!-- 2. Загрузка вопросов из CSV -->
         <loadData tableName="questions" file="db/data/questions.csv">
             <column name="id" type="NUMERIC"/>
             <column name="quest_id" type="NUMERIC"/>
         </loadData>
 
-        <!-- 3. Загрузка ответов из CSV -->
         <loadData tableName="answers" file="db/data/answers.csv">
             <column name="id" type="NUMERIC"/>
             <column name="question_id" type="NUMERIC"/>
         </loadData>
 
-        <!-- 4. Корректировка счетчиков id в PostgreSQL -->
         <sql dbms="postgresql">
             SELECT setval(pg_get_serial_sequence('quests', 'id'), coalesce((SELECT max(id) FROM quests), 1));
             SELECT setval(pg_get_serial_sequence('questions', 'id'), coalesce((SELECT max(id) FROM questions), 1));

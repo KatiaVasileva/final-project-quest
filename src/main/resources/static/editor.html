@@ -51,10 +51,9 @@
 
 <script src="auth.js"></script>
 <script>
-    // Если пришли с главной страницы по кнопке Редактировать
     const editId = localStorage.getItem('editQuestId');
     if (editId) {
-        localStorage.removeItem('editQuestId'); // тушим триггер
+        localStorage.removeItem('editQuestId');
         loadQuest(editId);
     }
 

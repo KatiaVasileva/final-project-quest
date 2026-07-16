@@ -62,7 +62,7 @@
 
     function editQuestDirect(id) {
         if (!isUserLoggedIn()) { return window.location.href = 'login.html'; }
-        localStorage.setItem('editQuestId', id); // Передаем ID в конструктор
+        localStorage.setItem('editQuestId', id);
         window.location.href = 'editor.html';
     }
 
