@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель тестирования REST API Квеста</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .api-card {
+            border-left: 5px solid #0d6efd;
+            transition: 0.2s;
+        }
+
+        .api-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .console-bg {
+            background-color: #000000 !important;
+            color: #00ff00 !important;
+            font-family: monospace;
+        }
+
+        .console-bg {
+            background-color: #000000 !important;
+            color: #00ff00 !important;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1">🚀 Панель управления и тестирования квестов</span>
+        <span class="navbar-text" id="authStatus">Статус: Гость</span>
+    </div>
+</nav>
+
+<div class="row">
+    <!-- ЛЕВАЯ КОЛОНКА: УПРАВЛЕНИЕ АВТОРИЗАЦИЕЙ И СТАТИСТИКОЙ -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">1. Аутентификация (/auth/*)</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Логин</label>
+                    <input type="text" id="username" class="form-control" value="admin">
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email (для регистрации)</label>
+                    <input type="email" id="email" class="form-control" placeholder="user@example.com">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Пароль</label>
+                    <input type="password" id="password" class="form-control" value="admin123">
+                </div>
+                <div class="d-grid gap-2">
+                    <button onclick="apiLogin()" class="btn btn-success">Войти (POST /login)</button>
+                    <button onclick="apiRegister()" class="btn btn-outline-primary btn-sm">Регистрация (POST
+                        /register)
+                    </button>
+                    <button onclick="apiRefresh()" class="btn btn-outline-warning btn-sm">Обновить токен (POST
+                        /refresh)
+                    </button>
+                    <button onclick="apiLogout()" class="btn btn-danger btn-sm">Выйти (POST /logout)</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white">2. Статистика (/stats)</div>
+            <div class="card-body d-grid gap-2">
+                <button onclick="apiGetStats()" class="btn btn-info text-white">Личная статистика (GET /stats)</button>
+                <button onclick="apiGetLeaderboard()" class="btn btn-outline-info btn-sm">Таблица лидеров
+                    (/leaderboard)
+                </button>
+            </div>
+        </div>
+
+        <!-- БЛОК 4: КОНСТРУКТОР КВЕСТОВ (JSON) -->
+        <div class="card shadow-sm border-primary mb-4">
+            <div class="card-header bg-dark text-white">🛠️ Конструктор квестов (JSON CRUD)</div>
+            <div class="card-body">
+                <div class="mb-2 text-muted small">Вставьте сюда структуру JSON для создания или изменения квеста:</div>
+                <div class="mb-3">
+                    <label for="questJsonInput" class="form-label text-white">JSON структура квеста</label>
+                    <textarea id="questJsonInput" class="form-control console-bg text-white" rows="8"
+                              style="font-size: 12px;"></textarea>
+                </div>
+                <div class="d-grid gap-2">
+                    <button onclick="fillSampleJson()" class="btn btn-outline-secondary btn-sm">Загрузить шаблон JSON
+                    </button>
+                    <button onclick="apiCreateQuest()" class="btn btn-success btn-sm">Создать (POST /quests)</button>
+                    <div class="input-group">
+                        <input type="number" id="targetQuestId" class="form-control form-control-sm"
+                               placeholder="ID квеста">
+                        <button onclick="apiUpdateQuest()" class="btn btn-warning btn-sm text-dark">Изменить (PUT)
+                        </button>
+                        <button onclick="apiDeleteQuest()" class="btn btn-danger btn-sm">Удалить (DELETE)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ПРАВАЯ КОЛОНКА: ИГРА И КВЕСТЫ -->
+    <div class="col-md-8">
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <span>📋 Витрина квестов (/quests)</span>
+                <div>
+                    <button onclick="apiGetQuests(false)" class="btn btn-light btn-sm fw-bold me-1">Все квесты</button>
+                    <button onclick="apiGetQuests(true)" class="btn btn-warning btn-sm fw-bold">⭐ Мои квесты (/my)
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="questsContainer" class="row row-cols-1 row-cols-md-2 g-3">
+                    <div class="text-muted p-3">Нажмите «Все квесты» или «Мои квесты» для загрузки списка...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- БЛОК ДИНАМИКИ ИГРОВОГО ПРОЦЕССА -->
+        <div class="card shadow-sm mb-4" id="gameBlock" style="display:none;">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <span>🎮 Игровой процесс (/game/*)</span>
+                <button class="btn btn-sm btn-close"
+                        onclick="document.getElementById('gameBlock').style.display='none'"></button>
+            </div>
+            <div class="card-body bg-white">
+                <h5 id="gameQuestionText" class="mb-4">Текст вопроса</h5>
+                <div id="answersContainer" class="d-grid gap-2 col-10 mx-auto"></div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-danger mb-4">
+            <div class="card-header bg-danger text-white">🛡️ Административный слой (GET /users)</div>
+            <div class="card-body">
+                <button onclick="apiGetUsers()" class="btn btn-outline-danger">Выгрузить всех пользователей системы
+                </button>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">📟 Ответ от Spring Boot (Сырой JSON)</div>
+            <div class="card-body bg-black p-0">
+                <pre id="jsonConsole" class="m-0 p-3 console-bg" style="max-height: 400px; overflow-y: auto;">Здесь будет отображаться лог ответов сервера...</pre>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+</div>
+
+<script>
+    const BASE_URL = 'http://localhost:8080';
+
+    async function authenticatedFetch(url, options = {}) {
+        // 1. Подставляем текущие заголовки и Access Token
+        const token = localStorage.getItem('accessToken');
+        options.headers = {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+            ...options.headers
+        };
+
+        // 2. Делаем исходный запрос
+        let response = await fetch(url, options);
+
+        // 3. Если сервер вернул 401 Unauthorized или текст об истечении токена
+        if (response.status === 401 || response.status === 403) {
+            const cloneForText = response.clone();
+            let isExpired = false;
+
+            try {
+                const text = await cloneForText.text();
+                if (text.includes("expired") || text.includes("token")) {
+                    isExpired = true;
+                }
+            } catch (e) { /* Игнорируем ошибки чтения текста */
+            }
+
+            // Если токен действительно протух, запускаем бесшумное обновление
+            if (isExpired || response.status === 401) {
+                console.log("Access токен просрочен. Запуск автоматического бесшумного обновления через Refresh Token...");
+
+                const refreshToken = localStorage.getItem('refreshToken');
+                if (!refreshToken) {
+                    console.warn("Refresh Token отсутствует. Перенаправление на логаут.");
+                    apiLogout();
+                    throw new Error("Сессия истекла. Пожалуйста, авторизуйтесь заново.");
+                }
+
+                // Шлем запрос на обновление токенов
+                const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({refreshToken: refreshToken})
+                });
+
+                if (refreshResponse.ok) {
+                    const data = await refreshResponse.json();
+                    // Записываем новые валидные токены в браузер
+                    localStorage.setItem('accessToken', data.accessToken);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+
+                    console.log("Токены успешно обновлены! Повторяем исходный запрос пользователя...");
+
+                    // Обновляем заголовок Authorization новым токеном
+                    options.headers['Authorization'] = `Bearer ${data.accessToken}`;
+
+                    // 4. ПОВТОРЯЕМ ИСХОДНЫЙ ЗАПРОС С НОВЫМ ТОКЕНОМ
+                    response = await fetch(url, options);
+                } else {
+                    // Если рефреш-токен тоже просрочен (например, пользователя не было неделю)
+                    console.error("Refresh токен тоже просрочен. Полный разлогин.");
+                    apiLogout();
+                    alert("Ваша сессия полностью истекла. Пожалуйста, введите логин и пароль заново.");
+                    throw new Error("Refresh token expired");
+                }
+            }
+        }
+
+        return response;
+    }
+
+    function printJson(data) {
+        document.getElementById('jsonConsole').innerText = JSON.stringify(data, null, 2);
+    }
+
+    function getHeaders() {
+        const token = localStorage.getItem('accessToken');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+        };
+    }
+
+    // 1. АВТОРИЗАЦИЯ
+    async function apiLogin() {
+        try {
+            const payload = {
+                login: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+
+            const res = await fetch(`${BASE_URL}/auth/login`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            printJson(data);
+
+            if (res.ok) {
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('refreshToken', data.refreshToken);
+
+                document.getElementById('authStatus').innerText = `Пользователь: ${payload.login}`;
+                document.getElementById('authStatus').className = 'navbar-text text-warning font-weight-bold';
+            }
+        } catch (error) {
+            printJson({
+                error: "Сетевая ошибка",
+                message: "Не удалось связаться со Spring Boot сервером. Проверьте, запущен ли бэкенд."
+            });
+            console.error("Ошибка авторизации:", error);
+        }
+    }
+
+    async function apiRegister() {
+        try {
+            const payload = {
+                login: document.getElementById('username').value,
+                email: document.getElementById('email').value, // Считываем из HTML поля
+                password: document.getElementById('password').value
+            };
+
+            if (!payload.email) {
+                printJson({
+                    error: "CLIENT_VALIDATION",
+                    message: "Пожалуйста, заполните поле Email перед регистрацией!"
+                });
+                return;
+            }
+
+            const res = await fetch(`${BASE_URL}/auth/register`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const jsonError = await res.json();
+                printJson(jsonError);
+            } else {
+                const textSuccess = await res.text();
+                printJson({message: textSuccess});
+            }
+        } catch (error) {
+            printJson({error: "NETWORK_ERROR", message: "Не удалось связаться с сервером."});
+            console.error("Ошибка регистрации:", error);
+        }
+    }
+
+    async function apiRefresh() {
+        const res = await fetch(`${BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({refreshToken: localStorage.getItem('refreshToken')})
+        });
+        const data = await res.json();
+        printJson(data);
+        if (res.ok) localStorage.setItem('accessToken', data.accessToken);
+    }
+
+    async function apiLogout() {
+        const res = await fetch(`${BASE_URL}/auth/logout`, {method: 'POST', headers: getHeaders()});
+        const data = await res.json();
+        printJson(data);
+        localStorage.clear();
+        document.getElementById('authStatus').innerText = 'Статус: Гость';
+        document.getElementById('authStatus').className = 'navbar-text';
+        document.getElementById('gameBlock').style.display = 'none';
+    }
+
+    // 2. КВЕСТЫ
+    async function apiGetQuests(onlyMy = false) {
+        try {
+            const url = onlyMy ? `${BASE_URL}/quests/my` : `${BASE_URL}/quests`;
+            const res = await fetch(url, { method: 'GET' });
+            const data = await res.json();
+            printJson(data);
+
+            const container = document.getElementById('questsContainer');
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = `<div class="text-muted p-2">Квесты не обнаружены.</div>`;
+                return;
+            }
+
+            data.forEach(q => {
+                // Добавлена кнопка "Удалить" с передачей динамического q.id прямо в функцию
+                container.innerHTML += `
+                    <div class="col" id="quest-card-${q.id}">
+                        <div class="card h-100 api-card shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">${q.title} <span class="badge bg-secondary text-white" style="font-size:10px;">ID: ${q.id}</span></h5>
+                                <p class="card-text text-muted small mb-3">${q.description}</p>
+                                <div class="d-flex gap-1 justify-content-between">
+                                    <div class="d-flex gap-1">
+                                        <button onclick="apiStartGame(${q.id})" class="btn btn-xs btn-primary btn-sm">Играть</button>
+                                        <button onclick="loadQuestIntoEditor(${q.id})" class="btn btn-xs btn-outline-warning btn-sm text-dark">В редактор</button>
+                                    </div>
+                                    <button onclick="apiDeleteQuestDirect(${q.id}, '${q.title}')" class="btn btn-xs btn-danger btn-sm">Удалить</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        } catch (e) { printJson({ error: "Ошибка получения списка", message: e.message }); }
+    }
+
+    async function apiCreateQuest() {
+        try {
+            const jsonText = document.getElementById('questJsonInput').value;
+            // Использован умный автоматический метод
+            const res = await authenticatedFetch(`${BASE_URL}/quests`, {
+                method: 'POST',
+                body: jsonText
+            });
+            printJson(await res.json());
+            apiGetQuests(false);
+        } catch (e) { printJson({ error: "Ошибка создания квеста", message: e.message }); }
+    }
+
+    async function apiUpdateQuest() {
+        try {
+            const id = document.getElementById('targetQuestId').value;
+            const textarea = document.getElementById('questJsonInput');
+            const jsonText = textarea.value; // Берем текущее значение прямо перед отправкой
+
+            if (!id) return alert("Укажите ID квеста для изменения!");
+            if (!jsonText) return alert("Поле JSON пустое!");
+
+            const res = await authenticatedFetch(`${BASE_URL}/quests/${id}`, {
+                method: 'PUT',
+                body: jsonText
+            });
+
+            const data = await res.json();
+            printJson(data);
+
+            apiGetQuests(false);
+        } catch (e) {
+            printJson({error: "Ошибка обновления квеста", message: e.message});
+        }
+    }
+
+    async function apiDeleteQuest() {
+        const id = document.getElementById('targetQuestId').value;
+        if (!id) return alert("Укажите ID квеста для удаления!");
+        if (!confirm(`Удалить квест ID ${id} и все его вопросы/ответы каскадно?`)) return;
+
+        try {
+            const res = await authenticatedFetch(`${BASE_URL}/quests/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                printJson({success: true, message: `Квест с ID ${id} успешно удален.`});
+                apiGetQuests(false);
+            } else {
+                printJson(await res.json());
+            }
+        } catch (e) {
+            printJson({error: e.message});
+        }
+    }
+
+    async function apiDeleteQuestDirect(id, title) {
+        if (!id) return;
+        if (!confirm(`Вы действительно хотите БЕЗВОЗВРАТНО удалить квест "${title}" (ID: ${id}) и все его вопросы/ответы?`)) return;
+
+        try {
+            const res = await authenticatedFetch(`${BASE_URL}/quests/${id}`, { method: 'DELETE' });
+
+            if (res.ok) {
+                printJson({ success: true, message: `Квест "${title}" [ID: ${id}] успешно удален из системы.` });
+
+                const card = document.getElementById(`quest-card-${id}`);
+                if (card) {
+                    card.style.opacity = '0';
+                    card.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => card.remove(), 300);
+                }
+            } else {
+                const errorData = await res.json();
+                printJson(errorData);
+            }
+        } catch (e) {
+            printJson({ error: "Ошибка при удалении квеста", message: e.message });
+        }
+    }
+
+    async function loadQuestIntoEditor(id) {
+        try {
+            const res = await authenticatedFetch(`${BASE_URL}/quests/${id}`, { method: 'GET' });
+            const data = await res.json();
+
+            const textarea = document.getElementById('questJsonInput');
+            textarea.value = JSON.stringify(data, null, 2);
+
+            document.getElementById('targetQuestId').value = id;
+
+            log.info("Квест ID " + id + " успешно загружен в конструктор.");
+        } catch (e) {
+            printJson({error: "Ошибка загрузки в редактор", message: e.message});
+        }
+    }
+
+    function fillSampleJson() {
+        const sample = {
+            title: "Новый пользовательский квест",
+            description: "Краткое описание создаваемого квеста",
+            text: "Вступление в сюжетную линию...",
+            image: "image.png",
+            startQuestionId: null,
+            questions: [
+                {
+                    label: "1",
+                    text: "Перед вами развилка. Куда пойдете?",
+                    answers: [
+                        {text: "Пойти налево", description: "Там опасность", nextQuestionLabel: "-910"},
+                        {text: "Пойти направо", description: "Там спасение", nextQuestionLabel: "+810"}
+                    ]
+                },
+                {label: "+810", text: "Вы победили и нашли сокровища!", answers: []},
+                {label: "-910", text: "Вы наступили на ловушку. Поражение.", answers: []}
+            ]
+        };
+        document.getElementById('questJsonInput').value = JSON.stringify(sample, null, 2);
+    }
+
+    async function apiStartGame(questId) {
+        try {
+            const res = await authenticatedFetch(`${BASE_URL}/game/start?questId=${questId}`, {
+                method: 'POST',
+                headers: getHeaders()
+            });
+            const data = await res.json();
+            printJson(data);
+            if (res.ok) renderQuestion(data);
+        } catch (e) {
+            printJson({error: e.message});
+        }
+    }
+
+    async function apiPlayTurn(answerId) {
+        try {
+            const res = await authenticatedFetch(`${BASE_URL}/game/play?answerId=${answerId}`, {
+                method: 'POST',
+                headers: getHeaders()
+            });
+            const data = await res.json();
+            printJson(data);
+            if (res.ok) renderQuestion(data);
+        } catch (e) {
+            printJson({error: e.message});
+        }
+    }
+
+    function renderQuestion(qDto) {
+        document.getElementById('gameBlock').style.display = 'block';
+        document.getElementById('gameQuestionText').innerText = `[Шаг ${qDto.label}]: ${qDto.text}`;
+
+        const ansContainer = document.getElementById('answersContainer');
+        ansContainer.innerHTML = '';
+
+        if (!qDto.answers || qDto.answers.length === 0) {
+            ansContainer.innerHTML = `
+                <div class="alert alert-dark text-center fw-bold">🏁 Игра завершена!</div>
+                <button onclick="apiGetStats()" class="btn btn-success w-100">Посмотреть мою статистику (GET /stats)</button>
+            `;
+            return;
+        }
+
+        qDto.answers.forEach(a => {
+            ansContainer.innerHTML += `
+                <button onclick="apiPlayTurn(${a.id})" class="btn btn-outline-dark text-start p-3 my-1">
+                    👉 <strong>${a.text}</strong>
+                    <span class="text-muted d-block small">Переход в ветку: ${a.nextQuestionLabel}</span>
+                </button>`;
+        });
+    }
+
+    async function apiGetStats() {
+        try {
+            const res = await authenticatedFetch(`${BASE_URL}/stats`, {method: 'GET', headers: getHeaders()});
+            printJson(await res.json());
+        } catch (e) {
+            printJson({error: e.message});
+        }
+    }
+
+    async function apiGetLeaderboard() {
+        try {
+            const res = await authenticatedFetch(`${BASE_URL}/stats/leaderboard`, {method: 'GET', headers: getHeaders()});
+            printJson(await res.json());
+        } catch (e) {
+            printJson({error: e.message});
+        }
+    }
+
+    async function apiGetUsers() {
+        try {
+            const res = await authenticatedFetch(`${BASE_URL}/users`, {
+                method: 'GET',
+                headers: getHeaders()
+            });
+            const data = await res.json();
+            printJson(data);
+        } catch (e) {
+            printJson({error: e.message});
+        }
+    }
+
+</script>
+</body>

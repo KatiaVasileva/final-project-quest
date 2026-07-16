@@ -2,8 +2,11 @@ package com.vasileva.finalprojectquest.service;
 
 import com.vasileva.finalprojectquest.dto.FullQuestDto;
 import com.vasileva.finalprojectquest.entity.Quest;
+import com.vasileva.finalprojectquest.entity.Question;
 import com.vasileva.finalprojectquest.entity.User;
 import com.vasileva.finalprojectquest.mapper.FullQuestMapper;
+import com.vasileva.finalprojectquest.repository.GameRepository;
+import com.vasileva.finalprojectquest.repository.GameStateRepository;
 import com.vasileva.finalprojectquest.repository.QuestRepository;
 import com.vasileva.finalprojectquest.repository.UserRepository;
 import com.vasileva.finalprojectquest.util.MessageHelper;
@@ -21,6 +24,8 @@ import java.util.List;
 public class QuestService {
     private final QuestRepository questRepository;
     private final UserRepository userRepository;
+    private final GameRepository gameRepository;
+    private final GameStateRepository gameStateRepository;
     private final FullQuestMapper fullQuestMapper;
     private final MessageHelper messageHelper;
 
@@ -53,7 +58,7 @@ public class QuestService {
         Quest quest = fullQuestMapper.toEntity(dto);
         quest.setCreator(creator);
 
-        if (quest.getQuestions() != null) {
+        if (quest.getQuestions() != null && !quest.getQuestions().isEmpty()) {
             log.debug("Establishing bidirectional connections for {} quest questions", quest.getQuestions().size());
             quest.getQuestions().forEach(question -> {
                 question.setQuest(quest);
@@ -64,6 +69,15 @@ public class QuestService {
         }
 
         Quest savedQuest = questRepository.save(quest);
+
+        if (savedQuest.getQuestions() != null && !savedQuest.getQuestions().isEmpty()) {
+            Question firstQuestion = savedQuest.getQuestions().getFirst();
+            savedQuest.setStartQuestionId(firstQuestion.getId());
+            savedQuest = questRepository.save(savedQuest);
+        } else {
+            throw new RuntimeException("Impossible to create a quest without questions!");
+        }
+
         log.info("Quest '{}' successfully saved with ID: {}, author: [{}]",
                 savedQuest.getTitle(), savedQuest.getId(), username);
         return fullQuestMapper.toDto(savedQuest);
@@ -109,7 +123,21 @@ public class QuestService {
             throw new EntityNotFoundException(
                     messageHelper.getMessage("error.quest.not_found", id));
         }
+
+        gameRepository.findAllByQuestId(id).forEach(game -> {
+            log.debug("Cascade removal of Game [ID: {}] for quest [ID: {}]", game.getId(), id);
+            gameRepository.delete(game);
+        });
+        gameRepository.flush();
+
+        gameStateRepository.findAllByCurrentQuestId(id).forEach(state -> {
+            log.debug("Cascade removal of GameState [ID: {}] for quest [ID: {}]", state.getId(), id);
+            gameStateRepository.delete(state);
+        });
+        gameStateRepository.flush();
+
         questRepository.deleteById(id);
+        questRepository.flush();
         log.info("Quest [ID: {}] and all its cascaded questions/answers have been completely deleted", id);
     }
 

@@ -2,6 +2,7 @@ package com.vasileva.finalprojectquest.controller;
 
 import com.vasileva.finalprojectquest.dto.UserAdminDto;
 import com.vasileva.finalprojectquest.dto.UserSaveDto;
+import com.vasileva.finalprojectquest.dto.UserUpdateDto;
 import com.vasileva.finalprojectquest.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserAdminDto> update(@PathVariable Long id, @Valid @RequestBody UserSaveDto dto) {
+    public ResponseEntity<UserAdminDto> update(@PathVariable Long id, @Valid @RequestBody UserUpdateDto dto) {
         log.info("REST request from ADMIN to update user [ID: {}]", id);
         UserAdminDto updatedUser = userService.updateUser(id, dto);
 

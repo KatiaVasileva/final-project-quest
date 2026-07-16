@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход в систему квестов</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light d-flex align-items-center" style="height: 100vh;">
+
+<div class="container" style="max-width: 400px;">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white text-center fw-bold">🔐 Авторизация</div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="username" class="form-label">Логин</label>
+                <input type="text" id="username" class="form-control" value="admin">
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email (только для регистрации)</label>
+                <input type="email" id="email" class="form-control" placeholder="user@example.com">
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Пароль</label>
+                <input type="password" id="password" class="form-control" value="admin123">
+            </div>
+            <div class="d-grid gap-2">
+                <button onclick="apiLogin()" class="btn btn-success">Войти</button>
+                <button onclick="apiRegister()" class="btn btn-outline-primary btn-sm">Регистрация</button>
+                <a class="active" href="index.html" style="text-align: center; font-size: small">На главную</a>
+            </div>
+            <hr>
+            <div id="msgBox"
+                 class="text-danger small text-center mt-3 p-2 bg-danger bg-opacity-10 rounded border border-danger border-opacity-25"
+                 style="display: none;"></div>
+        </div>
+    </div>
+</div>
+<script>
+    const BASE_URL = '';
+
+    function showMessage(text, isSuccess = false) {
+        const box = document.getElementById('msgBox');
+        box.innerText = text;
+        box.style.display = 'block';
+        if (isSuccess) {
+            box.className = 'text-success small text-center mt-3 p-2 bg-success bg-opacity-10 rounded border border-success border-opacity-25 fw-bold';
+        } else {
+            box.className = 'text-danger small text-center mt-3 p-2 bg-danger bg-opacity-10 rounded border border-danger border-opacity-25 fw-bold';
+        }
+    }
+
+    async function apiLogin() {
+        try {
+            const payload = {
+                login: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+
+            // Валидация на стороне клиента (фронтенда)
+            if (!payload.login.trim() || !payload.password.trim()) {
+                showMessage("Пожалуйста, заполните поля Логин и Пароль!");
+                return;
+            }
+
+            const res = await fetch(`${BASE_URL}/auth/login`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('refreshToken', data.refreshToken);
+                window.location.href = 'index.html'; // Успех: уходим на главную
+            } else {
+                const errData = await res.json();
+                showMessage(errData.message || "Неверный логин или пароль");
+            }
+        } catch (e) {
+            showMessage("Ошибка сети: проверьте, запущен ли бэкенд приложения.");
+        }
+    }
+
+    async function apiRegister() {
+        try {
+            const payload = {
+                login: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            };
+
+            if (!payload.login.trim() || !payload.email.trim() || !payload.password.trim()) {
+                showMessage("Для регистрации необходимо заполнить Логин, Email и Пароль!");
+                return;
+            }
+
+            const res = await fetch(`${BASE_URL}/auth/register`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const contentType = res.headers.get("content-type");
+            if (res.ok) {
+                const textSuccess = await res.text();
+                showMessage("Регистрация успешна! Теперь нажмите 'Войти'.", true);
+            } else {
+                if (contentType && contentType.includes("application/json")) {
+                    const jsonError = await res.json();
+                    showMessage(jsonError.message);
+                } else {
+                    showMessage("Ошибка регистрации на сервере.");
+                }
+            }
+        } catch (e) {
+            showMessage("Ошибка сети: не удалось связаться с сервером.");
+        }
+    }
+</script>
+</body>
+</html>

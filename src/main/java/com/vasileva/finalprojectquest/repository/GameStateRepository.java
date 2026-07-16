@@ -9,5 +9,5 @@ public interface GameStateRepository extends JpaRepository<GameState, Long> {
 
     Optional<GameState> findByUserId(Long userId);
 
-    void deleteByUserId(Long userId);
+    Iterable<GameState> findAllByCurrentQuestId(Long id);
 }

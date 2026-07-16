@@ -2,9 +2,12 @@ package com.vasileva.finalprojectquest.service;
 
 import com.vasileva.finalprojectquest.dto.UserAdminDto;
 import com.vasileva.finalprojectquest.dto.UserSaveDto;
+import com.vasileva.finalprojectquest.dto.UserUpdateDto;
 import com.vasileva.finalprojectquest.entity.User;
 import com.vasileva.finalprojectquest.entity.UserStats;
 import com.vasileva.finalprojectquest.mapper.UserAdminMapper;
+import com.vasileva.finalprojectquest.repository.GameRepository;
+import com.vasileva.finalprojectquest.repository.GameStateRepository;
 import com.vasileva.finalprojectquest.repository.UserRepository;
 import com.vasileva.finalprojectquest.repository.UserStatsRepository;
 import com.vasileva.finalprojectquest.util.MessageHelper;
@@ -26,6 +29,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserStatsRepository userStatsRepository;
     private final UserAdminMapper userMapper;
+    private final GameRepository gameRepository;
+    private final GameStateRepository gameStateRepository;
     private final PasswordEncoder passwordEncoder;
     private final MessageHelper messageHelper;
 
@@ -70,7 +75,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserAdminDto updateUser(Long id, UserSaveDto dto) {
+    public UserAdminDto updateUser(Long id, UserUpdateDto dto) {
         log.debug("ADMIN updating user with ID: {}", id);
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> {
@@ -83,11 +88,6 @@ public class UserService {
         existingUser.setEmail(dto.getEmail());
         existingUser.setRole(dto.getRole());
 
-        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
-            log.debug("Administrator updated the password for user with ID: {}", id);
-            existingUser.setPassword(passwordEncoder.encode(dto.getPassword()));
-        }
-
         User updatedUser = userRepository.save(existingUser);
         log.info("ADMIN successfully updeted user [{}]", updatedUser.getLogin());
         return userMapper.toDto(updatedUser);
@@ -96,18 +96,30 @@ public class UserService {
     @Transactional
     public void deleteUser(Long id) {
         log.debug("ADMIN deleting user with ID: {}", id);
-
         if (!userRepository.existsById(id)) {
-            log.warn("ADMIN deletion attempt failed: user with ID {} does not exist", id);
-            throw new EntityNotFoundException(
-                    messageHelper.getMessage("error.user.not_found", id));
+            throw new EntityNotFoundException(messageHelper.getMessage("error.user.not_found", id));
         }
+        gameRepository.findByUserId(id).ifPresent(game -> {
+            log.debug("Deleting Game for user ID: {}", id);
+            gameRepository.delete(game);
+            gameRepository.flush();
+        });
+
+        gameStateRepository.findByUserId(id).ifPresent(state -> {
+            log.debug("Deleting GameState for user ID: {}", id);
+            gameStateRepository.delete(state);
+            gameStateRepository.flush();
+        });
+
         userStatsRepository.findByUserId(id).ifPresent(stats -> {
             userStatsRepository.delete(stats);
-            log.debug("Associated stats for user [ID: {}] have been successfully cleared", id);
+            userStatsRepository.flush();
+            log.debug("Stats [ID: {}] successfully deleted", id);
         });
 
         userRepository.deleteById(id);
-        log.info("User [ID: {}] has been deleted by ADMIN", id);
+        userRepository.flush();
+
+        log.info("User [ID: {}] and user sessions successfully deleted", id);
     }
 }
