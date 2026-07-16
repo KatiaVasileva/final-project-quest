@@ -9,5 +9,7 @@
 
     <include file="db/changelog/migrations/01-init-schema.xml"/>
     <include file="db/changelog/migrations/02-insert-space-quest.xml"/>
+    <include file="db/changelog/migrations/03-insert-admin-user.xml"/>
+    <include file="db/changelog/migrations/04-insert-hitchhiker-quest.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

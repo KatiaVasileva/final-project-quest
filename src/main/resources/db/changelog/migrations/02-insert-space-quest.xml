@@ -8,7 +8,6 @@
 
     <changeSet id="insert-space-quest" author="vasileva">
 
-        <!-- 1. ВСТАВКА КВЕСТА -->
         <insert tableName="quests">
             <column name="title" value="Космическое приключение"/>
             <column name="description" value="Ты — космический путешественник, чей корабль внезапно получает загадочный сигнал от неопознанного объекта..."/>
@@ -16,9 +15,7 @@
             <column name="image" value="quest-1.png"/>
         </insert>
 
-        <!-- 2. ВСТАВКА ВОПРОСОВ -->
-        <!-- Для связи с квестом используем подзапрос, который найдет ID только что созданного космического приключения -->
-        <insert tableName="questions">
+         <insert tableName="questions">
             <column name="label" value="1"/>
             <column name="text" value="Принять вызов НЛО?"/>
             <column name="quest_id" valueComputed="(SELECT id FROM quests WHERE title = 'Космическое приключение')"/>
@@ -54,10 +51,6 @@
             <column name="quest_id" valueComputed="(SELECT id FROM quests WHERE title = 'Космическое приключение')"/>
         </insert>
 
-        <!-- 3. ВСТАВКА ВАРИАНТОВ ОТВЕТОВ -->
-        <!-- Связываем ответы с вопросами через их текстовые лейблы (label) -->
-
-        <!-- Ответы для Вопроса 1 -->
         <insert tableName="answers">
             <column name="question_id" valueComputed="(SELECT id FROM questions WHERE label = '1' AND quest_id = (SELECT id FROM quests WHERE title = 'Космическое приключение'))"/>
             <column name="next_question_label" value="2"/>
@@ -69,7 +62,6 @@
             <column name="text" value="Отклонить вызов"/>
         </insert>
 
-        <!-- Ответы для Вопроса 2 -->
         <insert tableName="answers">
             <column name="question_id" valueComputed="(SELECT id FROM questions WHERE label = '2' AND quest_id = (SELECT id FROM quests WHERE title = 'Космическое приключение'))"/>
             <column name="next_question_label" value="3"/>
@@ -81,7 +73,6 @@
             <column name="text" value="Отказаться подниматься на мостик"/>
         </insert>
 
-        <!-- Ответы для Вопроса 3 -->
         <insert tableName="answers">
             <column name="question_id" valueComputed="(SELECT id FROM questions WHERE label = '3' AND quest_id = (SELECT id FROM quests WHERE title = 'Космическое приключение'))"/>
             <column name="next_question_label" value="+810"/>
@@ -93,9 +84,7 @@
             <column name="text" value="Солгать о себе"/>
         </insert>
 
-        <!-- 4. УСТАНОВКА СТАРТОВОГО ВОПРОСА ДЛЯ КВЕСТА -->
-        <!-- Теперь, когда первый вопрос физически создан и получил ID, мы обновляем сам квест, прописывая ему start_question_id -->
-        <update tableName="quests">
+       <update tableName="quests">
             <column name="start_question_id" valueComputed="(SELECT id FROM questions WHERE label = '1' AND quest_id = (SELECT id FROM quests WHERE title = 'Космическое приключение'))"/>
             <column name="image" value="quest-1.png"/>
             <where>title = 'Космическое приключение'</where>

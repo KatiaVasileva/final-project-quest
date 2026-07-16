@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260716-insert-admin-user" author="katiavasileva">
+        <insert tableName="users">
+            <column name="id" valueNumeric="1"/>
+            <column name="login" value="admin"/>
+            <column name="email" value="admin@gmail.com"/>
+            <column name="password" value="$2a$10$wM78YtS6D4H6X77lqWnco.p3K3vV9yGgqD8M9Wc7S6k6p6k6p6k6p"/>
+            <column name="role" value="ADMIN"/>
+        </insert>
+
+        <insert tableName="user_stats">
+            <column name="id" valueNumeric="1"/>
+            <column name="user_id" valueNumeric="1"/>
+            <column name="total" valueNumeric="0"/>
+            <column name="wins" valueNumeric="0"/>
+            <column name="losses" valueNumeric="0"/>
+        </insert>
+
+        <sql dbms="postgresql">
+            SELECT setval(pg_get_serial_sequence('users', 'id'), 1);
+            SELECT setval(pg_get_serial_sequence('user_stats', 'id'), 1);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
